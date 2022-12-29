@@ -2,34 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:webtoon/models/webtoon_,model.dart';
 import 'package:webtoon/services/api_service.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+class HomeScreen extends StatelessWidget {
+  HomeScreen({super.key});
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  List<WebtoonModel> webtoons = [];
-  bool isLoading = true;
-
-  void waitForWebToons() async{//非同期 処理 理由:受信するデータ(api)が配列
-    webtoons = await ApiService.getTodaysToons();
-    isLoading = false;
-    setState(() {//画面の更新
-
-    });
-  }
-
-  @override
-  void initState(){
-    super.initState();
-    waitForWebToons();//データをもらう関数を呼び出し そのデータをwebtoonsの配列に入れる
-  }
+  final Future<List<WebtoonModel>> webtoons = ApiService.getTodaysToons();
 
   Widget build(BuildContext context) {
-    print(webtoons);
-    print(isLoading);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -44,6 +23,68 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ),
       ),
+
+      //多いデータを　連続適の見せるときListView
+      //色んなデータを並べるとき使うWidget
+      body: FutureBuilder(
+        future: webtoons,
+        builder: (context, snapshot){
+          if(snapshot.hasData){
+           return Column(
+             children: [
+               const SizedBox(
+                 height: 50,
+               ),
+               Expanded(child: buildListView(snapshot))
+             ],
+           );
+          }
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      ),
     );
+  }
+
+  ListView buildListView(AsyncSnapshot<List<WebtoonModel>> snapshot) {
+    return ListView.separated(
+             scrollDirection: Axis.horizontal,
+             itemCount: snapshot.data!.length,
+             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+             itemBuilder: (context, index) {
+             var webtoon = snapshot.data![index];
+             return Column(
+               children: [
+                 Container(
+                    width: 250,
+                    clipBehavior: Clip.hardEdge,
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          blurRadius: 7,
+                          offset: Offset(10,10),
+                          color: Colors.black.withOpacity(0.5),
+                        )
+                      ],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Image.network(webtoon.thumb)
+                 ),
+                 const SizedBox(
+                   height: 10,
+                 ),
+                 Text(
+                   webtoon.title,
+                   style: const TextStyle(
+                     fontSize: 25,
+                     fontWeight: FontWeight.w600,
+                   ),
+                 ),
+               ],
+             );
+             },
+           separatorBuilder: (context, index)=>const SizedBox(width: 40,),
+         );
   }
 }

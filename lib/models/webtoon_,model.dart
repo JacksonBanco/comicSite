@@ -1,5 +1,4 @@
 
-
 class WebtoonModel{
   final String title, thumb,id;
 
